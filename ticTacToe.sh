@@ -47,13 +47,13 @@ function tossForPlay()
 function switchPlayer()
 {
 	#Checking condition using Ternary operators
-	[ $currentPlayer == 1 ] && computerTurn || playerTurn
+	[ $playerTurn == 1 ] && computerTurn || playerTurn
 }
 
 #Function for user play
 function playerTurn()
 {
-	currentPlayer=1
+	playerTurn=1
 	#FUNCNAME is an array containing all the names of the functions in the call stack
 	[ ${FUNCNAME[1]} == switchPlayer ] && echo "Player Turn Sign : $player"
 	read -p "Enter Position Between 1 to 9 : " position
@@ -69,11 +69,11 @@ function playerTurn()
 #Function for computer play
 function computerTurn()
 {
-	currentPlayer=0
+	playerTurn=0
 	checkWinningCells $computer
-	[ ${FUNCNAME[1]} == switchPlayer ] && echo " Computer Turn Sign $computer"
 	#$?-The exit status of the last command executed.
 	[ $? == 0 ] && checkWinningCells $player
+	[ $? == 0 ] && takeCornerPosition
 	[ $? == 0 ] && isCellEmpty $((RANDOM % 9)) $computer
 	displayBoard
 }
@@ -105,7 +105,7 @@ function checkWinningCells()
 		((col++))
 	done
 	[ $?==0 ] && $call 0 4 8 || return 1
-	[ $? == 0 ] && $call 2 4 6 || return 1
+	[ $?==0 ] && $call 2 4 6 || return 1
 }
 
 #Checking winner
@@ -134,6 +134,18 @@ function checkForComputer()
 			return 1
 		else
 			eval $(echo cell1=$cell2\;cell2=$cell3\;cell3=$cell1)
+		fi
+	done
+}
+
+function takeCornerPosition()
+{
+	for(( i=0;i<9;i+=2))
+	do
+		if [[ ${gameBoard[$i]} == *[[:digit:]]* && $i != 4 ]]; then
+			gameBoard[$i]=$computer
+			((playerMoves++))
+			return 1
 		fi
 	done
 }
