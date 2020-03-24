@@ -73,7 +73,7 @@ function computerTurn()
 	checkWinningCells $computer
 	#$?-The exit status of the last command executed.
 	[ $? == 0 ] && checkWinningCells $player
-	[ $? == 0 ] && takeCornerPosition
+	[ $? == 0 ] && takeCornerOrCenterPosition
 	[ $? == 0 ] && isCellEmpty $((RANDOM % 9)) $computer
 	displayBoard
 }
@@ -138,7 +138,7 @@ function checkForComputer()
 	done
 }
 
-function takeCornerPosition()
+function takeCornerOrCenterPosition()
 {
 	for(( i=0;i<9;i+=2))
 	do
@@ -148,6 +148,11 @@ function takeCornerPosition()
 			return 1
 		fi
 	done
+	if [[ ${gameBoard[((TOTAL_MOVES/2))]} == *[[:digit:]]*  ]]; then
+		gameBoard[$i]=$computer
+		((playerMoves++))
+		return 1
+	fi
 }
 
 #Running game untill game ends
