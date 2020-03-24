@@ -7,7 +7,6 @@ TOTAL_MOVES=9
 
 #variables
 playerMoves=0
-#playerTurn=0
 
 #array for game board
 declare -a gameBoard
@@ -48,17 +47,17 @@ function tossForPlay()
 function switchPlayer()
 {
 	#Checking condition using Ternary operators
-	[ $playerTurn == 1 ] && computerTurn || playerTurn
+	[ $currentPlayer == 1 ] && computerTurn || playerTurn
 }
 
 #Function for user play
 function playerTurn()
 {
+	currentPlayer=1
 	#FUNCNAME is an array containing all the names of the functions in the call stack
-	playerTurn=1
 	[ ${FUNCNAME[1]} == switchPlayer ] && echo "Player Turn Sign : $player"
 	read -p "Enter Position Between 1 to 9 : " position
-	if [[ $position -ge 1 && $position -le 9 ]]; then
+	if [[ $position -ge 1 && $position -le 9 && $position != ' ' ]]; then
 		isCellEmpty $position $player
 		checkWinningCells
 	else
@@ -70,11 +69,13 @@ function playerTurn()
 #Function for computer play
 function computerTurn()
 {
-	[ ${FUNCNAME[1]} == switchPlayer ] && echo " Computer Turn Sign $computer"
-	playerTurn=0
-	flag=0
+	currentPlayer=0
 	checkWinningCells $computer
-	[ $flag == 0 ] && isCellEmpty $((RANDOM % 9)) $computer
+	[ ${FUNCNAME[1]} == switchPlayer ] && echo " Computer Turn Sign $computer"
+	#$?-The exit status of the last command executed.
+	[ $? == 0 ] && checkWinningCells $player
+	[ $? == 0 ] && isCellEmpty $((RANDOM % 9)) $computer
+	displayBoard
 }
 
 #checking position is already filled or blank
@@ -99,12 +100,12 @@ function checkWinningCells()
 	col=0
 	for((row=0;row<7;row+=3))
 	do
-		[ $flag == 0 ] && $call $row $((row+1)) $((row+2))
-		[ $flag == 0 ] && $call $col $((col+3)) $((col+6))
+		[ $?==0 ] && $call $row $((row+1)) $((row+2)) || return 1
+		[ $?==0 ] && $call $col $((col+3)) $((col+6)) || return 1
 		((col++))
 	done
-	[ $flag == 0 ] && $call 0 4 8
-	[ $flag == 0 ] && $call 2 4 6
+	[ $?==0 ] && $call 0 4 8 || return 1
+	[ $? == 0 ] && $call 2 4 6 || return 1
 }
 
 #Checking winner
@@ -113,8 +114,8 @@ function checkWinner()
 	local cell1=$1 cell2=$2 cell3=$3
 	if [ ${gameBoard[$cell1]} == ${gameBoard[$cell2]} ] && [ ${gameBoard[$cell2]} == ${gameBoard[$cell3]} ]; then
 		[ ${gameBoard[$cell1]} == $player ] && winner=player || winner=computer
-		echo "$winner Win and Have Sign ${gameBoard[$cell1]}"
 		displayBoard
+		echo "$winner Win and Have Sign ${gameBoard[$cell1]}"
 		exit
 	fi
 }
@@ -129,14 +130,14 @@ function checkForComputer()
 		then
 			gameBoard[$cell3]=$computer
 			checkWinner $cell1 $cell2 $cell3
-			flag=1
 			((playerMoves++))
-			break
+			return 1
 		else
 			eval $(echo cell1=$cell2\;cell2=$cell3\;cell3=$cell1)
 		fi
 	done
 }
+
 #Running game untill game ends
 function playTillGameEnd()
 {
@@ -144,7 +145,6 @@ function playTillGameEnd()
 	tossForPlay
 	while [ $playerMoves -lt $TOTAL_MOVES ]
 	do
-		displayBoard
 		switchPlayer
 	done
 	displayBoard
